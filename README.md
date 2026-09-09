@@ -67,3 +67,15 @@ alias cls='clear'
 <br>
 source ~/.bashrc
 <br>
+
+## To back to specific version
+# 1. Grab the commit hash of specific Commit
+`git log --oneline -n`
+
+# 2. Overwrite all your project files with how they looked at specific Commit
+`git restore --source <commit-specific-hash>`
+
+# 3. Commit and push normally (no force-push needed!)
+`git commit -m "reset code back to specific commit hash state"`
+<br>
+`git push origin <branch-name>`
