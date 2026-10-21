@@ -79,3 +79,7 @@ source ~/.bashrc
 `git commit -m "reset code back to specific commit hash state"`
 <br>
 `git push origin <branch-name>`
+<br>
+## For GitLab
+please use this command first before first commit <br>
+git pull origin main --allow-unrelated-histories --no-rebase
