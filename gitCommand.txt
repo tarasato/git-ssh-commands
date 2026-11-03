@@ -37,3 +37,8 @@ ls -a ~
 nano ~/.bashrc
 alias cls='clear'
 source ~/.bashrc
+
+git remote add origin https://github.com/USERNAME/PROJECT.git
+git remote set-url --add --push origin https://github.com/USERNAME/PROJECT.git
+git remote set-url --add --push origin https://gitlab.com/USERNAME/PROJECT.git
+git push origin main
