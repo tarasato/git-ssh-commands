@@ -26,6 +26,10 @@ gh repo edit --visibility private
 <br>
 git remote add origin https://github.com/examples/examples.git
 <br>
+git remote set-url --add --push origin https://github.com/examples/examples.git
+<br>
+git remote set-url --add --push origin git@gitlab.com:examples/examples.git
+<br>
 git push -u origin main
 <br>
 <br>
