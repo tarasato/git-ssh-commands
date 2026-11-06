@@ -187,6 +187,70 @@ ssh -T git@gitlab.com
 chmod 400 ~/.ssh/id_rsa
 ```
 
+## SSH Config (no more ssh-add)
+
+Tell ssh which key to use for each host, so you don't need `ssh-add <path>` every time. Same file on Windows and Arch: `~/.ssh/config` (Windows = `C:\Users\<user>\.ssh\config`).
+
+```bash
+nano ~/.ssh/config
+```
+
+```
+Host github.com gitlab.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    AddKeysToAgent yes
+```
+
+- `Host` — use the settings below for these hosts (space-separated). ssh reads top to bottom, the first value found wins
+- `User git` — login as `git`, so `ssh -T github.com` works without `git@`
+- `IdentityFile` — path to your **private** key (change it if your key has another name). Without it ssh only tries default names (`id_ed25519`, `id_rsa`, ...)
+- `IdentitiesOnly yes` — send only this key, not every key in the agent (avoids `Too many authentication failures`)
+- `AddKeysToAgent yes` — after you type the passphrase once, ssh adds the key to the running agent by itself
+
+**Arch** — ssh refuses a config others can write:
+
+```bash
+chmod 600 ~/.ssh/config
+```
+
+How it works after this:
+- No agent → ssh asks the passphrase on every `git push` / `git pull`
+- Agent running (`eval $(ssh-agent -s)`) → asks once, then no more in that terminal (no `ssh-add` needed)
+
+Show the settings ssh will use for a host (reads config only, does not connect):
+
+```bash
+ssh -G gitlab.com | grep -E "^(user|hostname|port|identityfile|identitiesonly|addkeystoagent) "
+```
+
+Test:
+
+```bash
+ssh -T github.com
+```
+
+```bash
+ssh -T gitlab.com
+```
+
+Change an existing remote from HTTPS to SSH:
+
+```bash
+git remote set-url origin git@github.com:USERNAME/PROJECT.git
+```
+
+Multi-push origin (see **Push to GitHub + GitLab at once**) → replace the push URL:
+
+```bash
+git remote set-url --delete --push origin https://gitlab.com/USERNAME/PROJECT.git
+```
+
+```bash
+git remote set-url --add --push origin git@gitlab.com:USERNAME/PROJECT.git
+```
+
 ## Check Login
 
 ### HTTPS
