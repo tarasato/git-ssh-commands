@@ -393,6 +393,34 @@ alias cls='clear'
 source ~/.bashrc
 ```
 
+### Make Script Executable
+
+So people who clone on Linux/macOS can run `./install.sh` directly (no `Permission denied`). Git stores it as file mode `100755` (executable) instead of `100644` (normal).
+
+**Windows** — `chmod +x` has no effect (Git for Windows uses `core.fileMode=false`), so set the mode in git index:
+
+```bash
+git update-index --chmod=+x install.sh
+```
+
+**Arch** — git reads the execute bit from the file:
+
+```bash
+chmod +x install.sh
+```
+
+```bash
+git add install.sh
+```
+
+Check (`100755` = executable):
+
+```bash
+git ls-files -s install.sh
+```
+
+Then commit and push as usual.
+
 ### Push to GitHub + GitLab at once
 
 ```bash
