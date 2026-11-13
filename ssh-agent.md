@@ -178,6 +178,93 @@ ssh -i ~/.ssh/example_ed25519 -o IdentitiesOnly=yes -o IdentityAgent=none -T git
 GIT_SSH_COMMAND='ssh -i ~/.ssh/example_ed25519 -o IdentitiesOnly=yes -o IdentityAgent=none' git push origin main
 ```
 
+## Additional
+
+### Show loaded keys: `-l` vs `-L`
+
+Fingerprint (short ID of each key):
+
+```bash
+ssh-add -l
+```
+
+```
+256 SHA256:Xa1bC2dE3fG4hI5jK6lM7nO8pQ9rS0tU1vW2xY3zA4b user@example.com (ED25519)
+```
+
+- `256`: key size in bits (always 256 for ed25519)
+- `SHA256:...`: fingerprint = SHA-256 hash of the public key. GitHub / GitLab show the same format under Settings -> SSH Keys
+- `user@example.com`: the key's **comment** (set with `-C` when the key was made), not the file name
+- `(ED25519)`: key type
+
+Full public keys (same line as in the `.pub` file):
+
+```bash
+ssh-add -L
+```
+
+```
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@example.com
+```
+
+Use `-L` when you need to paste the public key somewhere (GitHub, GitLab, a server's `authorized_keys`) and the `.pub` file is not at hand. Neither option ever shows the private key.
+
+Same output from the files:
+
+```bash
+ssh-keygen -lf ~/.ssh/example_ed25519.pub
+```
+
+```bash
+cat ~/.ssh/example_ed25519.pub
+```
+
+### Which file is a loaded key?
+
+The agent keeps the key and its comment only, not the file name. Match fingerprints instead.
+
+Fingerprint of every `.pub` file:
+
+```bash
+for f in ~/.ssh/*.pub; do echo "$(ssh-keygen -lf "$f" | cut -d' ' -f2)  $f"; done
+```
+
+Only the files whose key is loaded in the agent:
+
+```bash
+for f in ~/.ssh/*.pub; do fp=$(ssh-keygen -lf "$f" | cut -d' ' -f2); ssh-add -l | grep -q "$fp" && echo "loaded: $f"; done
+```
+
+- `for f in ~/.ssh/*.pub; do ...; done`: run once per `.pub` file, name in `$f`
+- `ssh-keygen -lf "$f"`: fingerprint of that file (`-l` fingerprint, `-f` file)
+- `cut -d' ' -f2`: keep the 2nd space-separated word (`SHA256:...`)
+- `grep -q "$fp"`: true if that fingerprint is in the agent's list (`-q` = print nothing)
+- `&& echo`: print only when it matched
+
+### Make `-l` show the file name (change the comment)
+
+```bash
+ssh-keygen -c -C "example_ed25519" -f ~/.ssh/example_ed25519
+```
+
+- `-c`: change the comment, `-C "..."`: new comment, `-f`: the private key file (asks for the passphrase)
+- Also updates the `.pub` file. Copies already on GitHub / GitLab / `authorized_keys` keep the old comment; it is only a label and does not affect login.
+- Remove and add the key again (`ssh-add -d` then `ssh-add`) so the agent shows the new comment.
+- The comment travels with every public key you hand out, so a file name is also better than a real e-mail address.
+
+### File permissions
+
+```bash
+chmod 700 ~/.ssh && chmod 600 ~/.ssh/config ~/.ssh/example_ed25519
+```
+
+| Number | Owner | Group | Others | Result |
+|---|---|---|---|---|
+| `700` | `rwx` | `---` | `---` | only you can open / list / change the folder |
+| `600` | `rw-` | `---` | `---` | only you can read / edit the file |
+
+Each digit = read `4` + write `2` + execute `1` (for a folder, `x` = may enter it). Check with `ls -la ~/.ssh`. ssh refuses a private key that others can read (`UNPROTECTED PRIVATE KEY FILE!`) and a `config` that others can write (`Bad owner or permissions`). `.pub` files may stay `644`.
+
 ---
 
 # Part 2: Windows (Git Bash + Windows OpenSSH)
@@ -353,6 +440,81 @@ exit
 ```bash
 GIT_SSH_COMMAND='ssh -i ~/.ssh/example_ed25519 -o IdentitiesOnly=yes -o IdentityAgent=none' git push origin main
 ```
+
+## Additional
+
+### Show loaded keys: `-l` vs `-L`
+
+Same as Arch (see Part 1 -> Additional for what each field means), with the Windows `ssh-add.exe`:
+
+```bash
+"/c/Program Files/OpenSSH/ssh-add.exe" -l
+```
+
+```bash
+"/c/Program Files/OpenSSH/ssh-add.exe" -L
+```
+
+PowerShell:
+
+```powershell
+ssh-add -l
+```
+
+```powershell
+ssh-add -L
+```
+
+### Which file is a loaded key?
+
+Git Bash (`ssh-keygen` from Git Bash is fine here, it only reads the files):
+
+```bash
+for f in ~/.ssh/*.pub; do echo "$(ssh-keygen -lf "$f" | cut -d' ' -f2)  $f"; done
+```
+
+Only the loaded ones (asks the Windows agent):
+
+```bash
+for f in ~/.ssh/*.pub; do fp=$(ssh-keygen -lf "$f" | cut -d' ' -f2); "/c/Program Files/OpenSSH/ssh-add.exe" -l | grep -q "$fp" && echo "loaded: $f"; done
+```
+
+PowerShell:
+
+```powershell
+Get-ChildItem $HOME\.ssh\*.pub | ForEach-Object { "{0}  {1}" -f ((ssh-keygen -lf $_.FullName) -split ' ')[1], $_.Name }
+```
+
+### Make `-l` show the file name (change the comment)
+
+```bash
+ssh-keygen -c -C "example_ed25519" -f ~/.ssh/example_ed25519
+```
+
+Then remove and add the key again so the Windows agent stores the new comment:
+
+```bash
+"/c/Program Files/OpenSSH/ssh-add.exe" -d "$(cygpath -w ~/.ssh/example_ed25519)"
+```
+
+```bash
+"/c/Program Files/OpenSSH/ssh-add.exe" "$(cygpath -w ~/.ssh/example_ed25519)"
+```
+
+### File permissions
+
+`chmod` in Git Bash has almost no effect: Windows uses ACLs. Keys under `C:\Users\<you>\.ssh` are normally readable only by you, SYSTEM and Administrators. To lock a key down to your account only (PowerShell):
+
+```powershell
+icacls $HOME\.ssh\example_ed25519 /inheritance:r /grant:r "${env:USERNAME}:F"
+```
+
+```powershell
+icacls $HOME\.ssh\example_ed25519
+```
+
+- `/inheritance:r`: drop permissions inherited from the folder
+- `/grant:r "<user>:F"`: give your account Full control, replacing what it had
 
 ---
 
