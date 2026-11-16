@@ -241,16 +241,51 @@ for f in ~/.ssh/*.pub; do fp=$(ssh-keygen -lf "$f" | cut -d' ' -f2); ssh-add -l 
 - `grep -q "$fp"`: true if that fingerprint is in the agent's list (`-q` = print nothing)
 - `&& echo`: print only when it matched
 
-### Make `-l` show the file name (change the comment)
+### Change a key's comment
+
+The comment is the label at the end of the public key (`... example_ed25519` or `... user@example.com`). `ssh-add -l` shows it instead of the file name. It is only a label: changing it does not change the key or its fingerprint, and every place that already trusts the key keeps working.
+
+1. See the current comment
+
+```bash
+ssh-keygen -lf ~/.ssh/example_ed25519.pub
+```
+
+2. Change it (asks for the passphrase if the key has one)
 
 ```bash
 ssh-keygen -c -C "example_ed25519" -f ~/.ssh/example_ed25519
 ```
 
-- `-c`: change the comment, `-C "..."`: new comment, `-f`: the private key file (asks for the passphrase)
-- Also updates the `.pub` file. Copies already on GitHub / GitLab / `authorized_keys` keep the old comment; it is only a label and does not affect login.
-- Remove and add the key again (`ssh-add -d` then `ssh-add`) so the agent shows the new comment.
-- The comment travels with every public key you hand out, so a file name is also better than a real e-mail address.
+- `-c`: change the comment
+- `-C "..."`: the new comment
+- `-f`: the **private** key file. The `.pub` next to it is rewritten too.
+
+3. Check the result (the last word must be the new comment)
+
+```bash
+ssh-keygen -lf ~/.ssh/example_ed25519.pub
+```
+
+4. If the key is loaded in the agent, remove and add it again, or `ssh-add -l` keeps the old comment
+
+```bash
+ssh-add -d ~/.ssh/example_ed25519
+```
+
+```bash
+ssh-add ~/.ssh/example_ed25519
+```
+
+5. Optional: GitHub / GitLab / a server's `authorized_keys` keep showing the old comment. Login still works. To show the new one, delete the key there and add the new `.pub` again.
+
+Set the comment when creating a new key instead:
+
+```bash
+ssh-keygen -t ed25519 -C "example_ed25519" -f ~/.ssh/example_ed25519
+```
+
+The comment travels with every public key you hand out, so a file name is better than a real e-mail address.
 
 ### File permissions
 
@@ -485,13 +520,29 @@ PowerShell:
 Get-ChildItem $HOME\.ssh\*.pub | ForEach-Object { "{0}  {1}" -f ((ssh-keygen -lf $_.FullName) -split ' ')[1], $_.Name }
 ```
 
-### Make `-l` show the file name (change the comment)
+### Change a key's comment
+
+Same steps as Arch (see Part 1 -> Additional). `ssh-keygen` from Git Bash is fine for the file; only the agent steps need the Windows `ssh-add.exe`.
+
+1. See the current comment
+
+```bash
+ssh-keygen -lf ~/.ssh/example_ed25519.pub
+```
+
+2. Change it
 
 ```bash
 ssh-keygen -c -C "example_ed25519" -f ~/.ssh/example_ed25519
 ```
 
-Then remove and add the key again so the Windows agent stores the new comment:
+3. Check the result
+
+```bash
+ssh-keygen -lf ~/.ssh/example_ed25519.pub
+```
+
+4. If the key is loaded in the Windows agent, remove and add it again so the agent stores the new comment
 
 ```bash
 "/c/Program Files/OpenSSH/ssh-add.exe" -d "$(cygpath -w ~/.ssh/example_ed25519)"
@@ -500,6 +551,22 @@ Then remove and add the key again so the Windows agent stores the new comment:
 ```bash
 "/c/Program Files/OpenSSH/ssh-add.exe" "$(cygpath -w ~/.ssh/example_ed25519)"
 ```
+
+The same in **PowerShell**:
+
+```powershell
+ssh-keygen -c -C "example_ed25519" -f $HOME\.ssh\example_ed25519
+```
+
+```powershell
+ssh-add -d $HOME\.ssh\example_ed25519
+```
+
+```powershell
+ssh-add $HOME\.ssh\example_ed25519
+```
+
+5. Optional: GitHub / GitLab / `administrators_authorized_keys` keep the old comment until you replace the public key there.
 
 ### File permissions
 
