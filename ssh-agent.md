@@ -300,6 +300,15 @@ chmod 700 ~/.ssh && chmod 600 ~/.ssh/config ~/.ssh/example_ed25519
 
 Each digit = read `4` + write `2` + execute `1` (for a folder, `x` = may enter it). Check with `ls -la ~/.ssh`. ssh refuses a private key that others can read (`UNPROTECTED PRIVATE KEY FILE!`) and a `config` that others can write (`Bad owner or permissions`). `.pub` files may stay `644`.
 
+
+### Copy folder from remote
+```bash
+scp -i ~/.ssh/id_ed25519 -r user@0.0.0.0:~/path/to/folder ~/path/to/destination
+```
+Or
+```bash
+mkdir -p /path/to/destination && ssh -i user@0.0.0.0 "tar czf - -C /path/to/folder" | tar xzf - -C /path/to/destination
+```
 ---
 
 # Part 2: Windows (Git Bash + Windows OpenSSH)
