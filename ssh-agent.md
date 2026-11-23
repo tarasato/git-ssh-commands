@@ -307,7 +307,7 @@ scp -i ~/.ssh/id_ed25519 -r user@0.0.0.0:~/path/to/folder ~/path/to/destination
 ```
 Or
 ```bash
-mkdir -p /path/to/destination && ssh -i ~/.ssh/id_ed25519 user@0.0.0.0 "tar czf - -C /path/to/folder" | tar xzf - -C /path/to/destination
+mkdir -p /c/path/to/destination && ssh -i ~/.ssh/id_ed25519 user@0.0.0.0 "tar czf - -C ~ /path/to/folder" | tar xzf - -C /c/path/to/destination
 ```
 ---
 
