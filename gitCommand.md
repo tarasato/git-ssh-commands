@@ -488,15 +488,15 @@ Then commit and push as usual.
 ### Push to GitHub + GitLab at once
 
 ```bash
-git remote add origin https://github.com/USERNAME/PROJECT.git
+git remote add origin git@github.com:username/repository-name.git
 ```
 
 ```bash
-git remote set-url --add --push origin https://github.com/USERNAME/PROJECT.git
+git remote set-url --add --push origin git@github.com:username/repository-name.git
 ```
 
 ```bash
-git remote set-url --add --push origin https://gitlab.com/USERNAME/PROJECT.git
+git remote set-url --add --push origin git@gitlab.com:username/repository-name.git
 ```
 
 ```bash
